@@ -1,0 +1,3 @@
+[run]
+include = nike/*
+omit = *migrations*
