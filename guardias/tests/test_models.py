@@ -41,7 +41,7 @@ class TestGuardia(TestCase):
 
     def test_creacion(self):
         self.guardia = Guardia.objects.create(
-            fecha = datetime.strptime('2015 08 26', '%Y %m %d'),
+            fecha = datetime(2015, 8, 26).date(),
             tipo = Guardia.LAB_LAB
         )
         self.assertEqual(self.guardia.id,
