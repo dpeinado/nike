@@ -4,7 +4,9 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
 from nike.users.models import User
+from guardias.managers import guardiasManager
 # Create your models here.
+
 
 @python_2_unicode_compatible
 class Organizacion(models.Model):
@@ -49,9 +51,14 @@ class Guardia(models.Model):
                         (Tipo Domingo en semanas sin festivos)""")]
     id = models.IntegerField(primary_key=True, unique=True)
     fecha = models.DateField()
-    tipo = models.IntegerField(choices=TIPOS_GUARDIA, null=True, blank=True)
+    tipo = models.IntegerField(choices=TIPOS_GUARDIA, default=LAB_LAB, null=True, blank=True)
     owner = models.ForeignKey(User, null=True, related_name="owner")
     doneby = models.ForeignKey(User, null=True, related_name="doneby")
+
+    objects = guardiasManager()
+
+    class Meta:
+        ordering = ['id']
 
     def save(self, *args, **kwargs):
         if self.pk is None:
