@@ -4,3 +4,6 @@ class ConsistenciaCalendario(Exception):
 
 class NoExisteCalendario(Exception):
     pass
+
+class ExisteCalendario(Exception):
+    pass

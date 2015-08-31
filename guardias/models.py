@@ -28,7 +28,7 @@ class Centro(models.Model):
 @python_2_unicode_compatible
 class Guardia(models.Model):
     LAB_LAB = 0
-    LAB_LIB_FES = 1
+    LAB_LAB_FES = 1
     LAB_FES = 2
     FES_FES = 3
     FES_LAB = 4
@@ -36,7 +36,7 @@ class Guardia(models.Model):
                         Día laborable con día posterior laborable,
                         pero que la libranza no se enlaza con un festivo.
                         (Tipo lunes, martes o miércoles en semana sin festivos)"""),
-                     (LAB_LIB_FES, """
+                     (LAB_LAB_FES, """
                         Día laborable con día posterior laborable,
                         pero que la libranza si que se enlaza con festivo.
                         (Tipo jueves en semama sin festivos)"""),
