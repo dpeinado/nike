@@ -3,7 +3,9 @@
 from django.db import models
 from datetime import datetime, date, timedelta
 from django.core.exceptions import ObjectDoesNotExist
+from core.utility import alldaysinyear
 import csv
+from operator import itemgetter
 
 from guardias.exceptions import NoExisteCalendario, ConsistenciaCalendario, ExisteCalendario
 
@@ -201,15 +203,27 @@ class guardiasManager(models.Manager):
         dias = self.filter(tipo=ptipo).order_by('pk')
         return dias
 
-def alldaysinyear(year, day):
-    """
-    iterable con todos los day del year
-    :param year:
-    :param day:
-    :return:
-    """
-    d = date(year, 1, 1)                    # January 1st
-    d += timedelta(days = day - d.weekday())  # First Sunday
-    while d.year == year:
-        yield d
-        d += timedelta(days = 7)
+    def get_calendario(self, year):
+        micalendario = []
+
+        mtipo = self.model.LAB_LAB
+        respuesta = self.get_dias_tipo(year, mtipo)
+        micalendario.append([len(respuesta), respuesta])
+
+        mtipo = self.model.LAB_LAB_FES
+        respuesta = self.get_dias_tipo(2015, mtipo)
+        micalendario.append([len(respuesta), respuesta])
+
+        mtipo = self.model.LAB_FES
+        respuesta = self.get_dias_tipo(2015, mtipo)
+        micalendario.append([len(respuesta), respuesta])
+
+        mtipo = self.model.FES_FES
+        respuesta = self.get_dias_tipo(2015, mtipo)
+        micalendario.append([len(respuesta), respuesta])
+
+        mtipo = self.model.FES_LAB
+        respuesta = self.get_dias_tipo(2015, mtipo)
+        micalendario.append([len(respuesta), respuesta])
+
+        return sorted(micalendario, key=itemgetter(0))
