@@ -25,6 +25,7 @@ class Centro(models.Model):
     def __str__(self):
         return self.nombre
 
+
 @python_2_unicode_compatible
 class Guardia(models.Model):
     LAB_LAB = 0
@@ -62,8 +63,31 @@ class Guardia(models.Model):
 
     def save(self, *args, **kwargs):
         if self.pk is None:
-            self.id = datetime.toordinal(self.fecha)
+            self.id = self.fecha.toordinal()
         super(Guardia, self).save()
 
     def __str__(self):
         return "{0}: {1} -- {2}".format(self.fecha, self.tipo, self.owner)
+
+
+
+
+@python_2_unicode_compatible
+class VacacionesAnuales(models.Model):
+    persona = models.ForeignKey(User)
+    año = models.IntegerField()
+    dias_de_vacaciones = models.IntegerField(default=22)
+
+    @property
+    def dias_disfrutados(self, year):
+        pass
+
+
+@python_2_unicode_compatible
+class PeriodoVacaciones(models.Model):
+    vacaciones = models.ForeignKey(VacacionesAnuales)
+    comienzo = models.DateField()
+    final = models.DateField()
+    @property
+    def dias(self):
+        return (self.comienzo-self.final).days()

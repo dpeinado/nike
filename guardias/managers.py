@@ -227,3 +227,10 @@ class guardiasManager(models.Manager):
         micalendario.append([len(respuesta), respuesta])
 
         return sorted(micalendario, key=itemgetter(0))
+
+    def get_num_festivos(self, comienzo, final):
+        inicio = comienzo.toordinal()
+        fin = final.toordinal()
+        primero = self.filter(pk__gte=inicio).filter(pk__lte=fin).filter(tipo__gte=3)
+        pass
+

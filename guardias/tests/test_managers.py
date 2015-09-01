@@ -63,3 +63,7 @@ class TestSetSundays(TestCase):
         respuesta = Guardia.objects.get_calendario(2015)
         for cuantos, dias in respuesta:
             print(cuantos, dias)
+
+    def test_get_num_festivos(self):
+        Guardia.objects.set_calendario(2015, 'festivos.txt')
+        respuesta=Guardia.objects.get_num_festivos(date(2015,1,1), date(2015,2,15))
