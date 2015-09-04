@@ -88,6 +88,7 @@ class VacacionesAnuales(models.Model):
         pass
 
 
+
 # @python_2_unicode_compatible
 # class PeriodoVacaciones(models.Model):
 #     vacaciones = models.ForeignKey(VacacionesAnuales, related_name='periodos')

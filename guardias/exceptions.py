@@ -7,3 +7,6 @@ class NoExisteCalendario(Exception):
 
 class ExisteCalendario(Exception):
     pass
+
+class IllegalArgumentError(ValueError):
+    pass

@@ -6,8 +6,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from core.utility import alldaysinyear
 import csv
 from operator import itemgetter
+from nike.users.models import User
 
-from guardias.exceptions import NoExisteCalendario, ConsistenciaCalendario, ExisteCalendario
+from guardias.exceptions import NoExisteCalendario
+from guardias.exceptions import ConsistenciaCalendario
+from guardias.exceptions import ExisteCalendario
+from guardias.exceptions import IllegalArgumentError
 
 class guardiasManager(models.Manager):
 
@@ -163,11 +167,11 @@ class guardiasManager(models.Manager):
         # 1
         try:
             self.crea_calendario(year)
-            print('OK: Calendario creado para el año {}'.format(year))
+            # print('OK: Calendario creado para el año {}'.format(year))
         except ExisteCalendario:
-            print("""
-                Error: este año ({}) ya se encuentra en la base de datos.
-                Borre primero el año""".format(year))
+            # print("""
+            #     Error: este año ({}) ya se encuentra en la base de datos.
+            #     Borre primero el año""".format(year))
             raise ExisteCalendario()
             return
 
@@ -182,13 +186,13 @@ class guardiasManager(models.Manager):
                 g = self.get(pk=festivo)
                 g.tipo = self.model.FES_LAB
                 g.save()
-        print('OK: Añadidos los festivos para el año {}'.format(year))
+        # print('OK: Añadidos los festivos para el año {}'.format(year))
         # 3
         self.set_allSundaysSaturdays(year) # Domingos FES_FES
-        print('OK: Domingos como sábados para el año {}'.format(year))
+        # print('OK: Domingos como sábados para el año {}'.format(year))
         # 4
         self.set_allSaturdays(year) # Sábados FES_FES
-        print('OK: Sábados para el año {}'.format(year))
+        # print('OK: Sábados para el año {}'.format(year))
 
         # 5
         self.set_FES_LAB(year)
@@ -208,23 +212,23 @@ class guardiasManager(models.Manager):
 
         mtipo = self.model.LAB_LAB
         respuesta = self.get_dias_tipo_year(year, mtipo)
-        micalendario.append([len(respuesta), respuesta])
+        micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.LAB_LAB_FES
         respuesta = self.get_dias_tipo_year(2015, mtipo)
-        micalendario.append([len(respuesta), respuesta])
+        micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.LAB_FES
         respuesta = self.get_dias_tipo_year(2015, mtipo)
-        micalendario.append([len(respuesta), respuesta])
+        micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.FES_FES
         respuesta = self.get_dias_tipo_year(2015, mtipo)
-        micalendario.append([len(respuesta), respuesta])
+        micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.FES_LAB
         respuesta = self.get_dias_tipo_year(2015, mtipo)
-        micalendario.append([len(respuesta), respuesta])
+        micalendario.append([len(respuesta), mtipo, respuesta])
 
         return sorted(micalendario, key=itemgetter(0))
 
@@ -235,3 +239,26 @@ class guardiasManager(models.Manager):
             ).filter(
                 pk__lte=final.toordinal()
             ).filter(tipo__gte=3))
+
+    def set_vacaciones(self, rangodias, persona):
+        """
+        Coloca en el calendario de guardias para la persona dada los días marcados en la
+        lista rango dias.
+        :param rangodias: lista con dates para todos los días. Si quieres incluir un rango, hacerlo antes de
+         la llamada a la función
+        :param persona: Persona a la cual se van a colocar las ausencias.
+        :return: Nothing
+        """
+        correcto = False
+        if isinstance(rangodias, list) and isinstance(persona, User):
+            if all(isinstance(n, date) for n in rangodias):
+                correcto = True
+
+        if correcto:
+            for dia in rangodias:
+                miguardia = self.get(pk=dia.toordinal())
+                miguardia.ausencias.add(persona)
+                miguardia.save()
+
+        else:
+            raise IllegalArgumentError("Error en los argumentos a set_vacaciones")
