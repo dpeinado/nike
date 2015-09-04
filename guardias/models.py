@@ -55,6 +55,7 @@ class Guardia(models.Model):
     tipo = models.IntegerField(choices=TIPOS_GUARDIA, default=LAB_LAB, null=True, blank=True)
     owner = models.ForeignKey(User, null=True, related_name="owner")
     doneby = models.ForeignKey(User, null=True, related_name="doneby")
+    ausencias = models.ManyToManyField(User, related_name='vacaciones')
 
     objects = guardiasManager()
 
@@ -79,15 +80,20 @@ class VacacionesAnuales(models.Model):
     dias_de_vacaciones = models.IntegerField(default=22)
 
     @property
-    def dias_disfrutados(self, year):
+    def dias_disfrutados(self, comienzo, final):
+        pass
+
+    @property
+    def dias_restantes(self, comienzo, final):
         pass
 
 
-@python_2_unicode_compatible
-class PeriodoVacaciones(models.Model):
-    vacaciones = models.ForeignKey(VacacionesAnuales)
-    comienzo = models.DateField()
-    final = models.DateField()
-    @property
-    def dias(self):
-        return (self.comienzo-self.final).days()
+# @python_2_unicode_compatible
+# class PeriodoVacaciones(models.Model):
+#     vacaciones = models.ForeignKey(VacacionesAnuales, related_name='periodos')
+#     comienzo = models.DateField()
+#     final = models.DateField()
+#
+#     @property
+#     def dias(self):
+#         return (self.final-self.comienzo).days-Guardia.objects.get_num_festivos(self.comienzo, self.final)+1

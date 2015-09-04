@@ -36,23 +36,23 @@ class TestSetSundays(TestCase):
         Total = 0
         Guardia.objects.set_calendario(2015, 'festivos.txt')
         mtipo = Guardia.LAB_LAB
-        respuesta = Guardia.objects.get_dias_tipo(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
         print("Tipo {}: {}".format(mtipo, len(respuesta)))
         Total += len(respuesta)
         mtipo = Guardia.LAB_LAB_FES
-        respuesta = Guardia.objects.get_dias_tipo(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
         print("Tipo {}: {}".format(mtipo, len(respuesta)))
         Total += len(respuesta)
         mtipo = Guardia.LAB_FES
-        respuesta = Guardia.objects.get_dias_tipo(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
         print("Tipo {}: {}".format(mtipo, len(respuesta)))
         Total += len(respuesta)
         mtipo = Guardia.FES_FES
-        respuesta = Guardia.objects.get_dias_tipo(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
         print("Tipo {}: {}".format(mtipo, len(respuesta)))
         Total += len(respuesta)
         mtipo = Guardia.FES_LAB
-        respuesta = Guardia.objects.get_dias_tipo(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
         print("Tipo {}: {}".format(mtipo, len(respuesta)))
         Total += len(respuesta)
         print("---------------------------------------------")

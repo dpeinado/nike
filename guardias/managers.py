@@ -199,7 +199,7 @@ class guardiasManager(models.Manager):
         # 7
         self.set_LAB_LAB_FES(year)
 
-    def get_dias_tipo(self, year, ptipo):
+    def get_dias_tipo_year(self, year, ptipo):
         dias = self.filter(tipo=ptipo).order_by('pk')
         return dias
 
@@ -207,30 +207,31 @@ class guardiasManager(models.Manager):
         micalendario = []
 
         mtipo = self.model.LAB_LAB
-        respuesta = self.get_dias_tipo(year, mtipo)
+        respuesta = self.get_dias_tipo_year(year, mtipo)
         micalendario.append([len(respuesta), respuesta])
 
         mtipo = self.model.LAB_LAB_FES
-        respuesta = self.get_dias_tipo(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo)
         micalendario.append([len(respuesta), respuesta])
 
         mtipo = self.model.LAB_FES
-        respuesta = self.get_dias_tipo(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo)
         micalendario.append([len(respuesta), respuesta])
 
         mtipo = self.model.FES_FES
-        respuesta = self.get_dias_tipo(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo)
         micalendario.append([len(respuesta), respuesta])
 
         mtipo = self.model.FES_LAB
-        respuesta = self.get_dias_tipo(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo)
         micalendario.append([len(respuesta), respuesta])
 
         return sorted(micalendario, key=itemgetter(0))
 
     def get_num_festivos(self, comienzo, final):
-        inicio = comienzo.toordinal()
-        fin = final.toordinal()
-        primero = self.filter(pk__gte=inicio).filter(pk__lte=fin).filter(tipo__gte=3)
-        pass
-
+        return len(
+            self.filter(
+                pk__gte=comienzo.toordinal()
+            ).filter(
+                pk__lte=final.toordinal()
+            ).filter(tipo__gte=3))
