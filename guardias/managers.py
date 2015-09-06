@@ -204,10 +204,29 @@ class guardiasManager(models.Manager):
         self.set_LAB_LAB_FES(year)
 
     def get_dias_tipo_year(self, year, ptipo):
+        """
+        Proporciona el número los días de un cierto tipo
+        en el calendario de guardias. Por ejemplo,
+        get_dias_tipo_year(2015, Guardias.LAB_LAB) proporciona
+        todos los laborables seguidos de laborable del año 2015
+        :param year: Año del calendario
+        :param ptipo: tipo de guardia
+        :return: una query de Guardia
+        """
         dias = self.filter(tipo=ptipo).order_by('pk')
         return dias
 
     def get_calendario(self, year):
+        """
+        Proporciona una lista de listas [número días, tipo de día, query de días].
+        Esta lista está ordenada según el número de días de forma ascendente. La
+        primera lista corresponde al tipo de guardia del que hay menos en el año, y
+        por tanto más rígido a la hora de programar.
+        El propósito de esta función es proporcionar en orden las guardias que hay que
+        asignar, primero las de las que hay menos, y finalmente de las que hay más
+        :param year:
+        :return:
+        """
         micalendario = []
 
         mtipo = self.model.LAB_LAB
@@ -233,6 +252,14 @@ class guardiasManager(models.Manager):
         return sorted(micalendario, key=itemgetter(0))
 
     def get_num_festivos(self, comienzo, final):
+        """
+        Proporciona el número de festivos entre dos fechas
+        :param comienzo:
+        :param final:
+        :return:
+        """
+        if not isinstance(comienzo, date) or not isinstance(final, date):
+            raise IllegalArgumentError("Error en los argumentos a get_num_festivos")
         return len(
             self.filter(
                 pk__gte=comienzo.toordinal()
@@ -243,14 +270,14 @@ class guardiasManager(models.Manager):
     def set_vacaciones(self, rangodias, persona):
         """
         Coloca en el calendario de guardias para la persona dada los días marcados en la
-        lista rango dias.
+        lista rango dias como ausencias previstas (vacaciones o días de otro tipo).
         :param rangodias: lista con dates para todos los días. Si quieres incluir un rango, hacerlo antes de
          la llamada a la función
         :param persona: Persona a la cual se van a colocar las ausencias.
         :return: Nothing
         """
         correcto = False
-        if isinstance(rangodias, list) and isinstance(persona, User):
+        if isinstance(rangodias, list): # and isinstance(persona, User):
             if all(isinstance(n, date) for n in rangodias):
                 correcto = True
 
@@ -262,3 +289,25 @@ class guardiasManager(models.Manager):
 
         else:
             raise IllegalArgumentError("Error en los argumentos a set_vacaciones")
+
+    def num_guardias_tipo_asignadas(self, quien, hoy, tipo):
+        if not isinstance(hoy, date) or not isinstance(quien, User):
+            raise IllegalArgumentError("Error en los argumentos a num_guardias_tipo_asignadas")
+        añocorriente = hoy.year
+        inicio = date(añocorriente, 1, 1)
+        return self.filter(
+            owner = quien
+        ).filter(
+            fecha__gte=inicio
+        ).filter(
+            fecha__lte=hoy
+        ).filter(
+            tipo=tipo
+        ).count()
+
+    def get_all_shifts_year(self, año):
+        return self.filter(
+            fecha__gte=date(año,1,1)
+        ).filter(
+            fecha__lte=date(año,12,31)
+        )

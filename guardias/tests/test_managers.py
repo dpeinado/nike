@@ -2,6 +2,9 @@
 
 # python imports
 from datetime import datetime, date
+import csv
+import random
+
 # django imports
 from test_plus.test import TestCase
 from django.core.management import call_command
@@ -9,7 +12,7 @@ from django.core.management import call_command
 from model_mommy import mommy
 from model_mommy.recipe import Recipe, foreign_key
 # app imports
-from guardias.models import Guardia, VacacionesAnuales
+from guardias.models import Guardia, VacacionesAnuales, Centro, Organizacion
 from nike.users.models import User
 
 
@@ -40,6 +43,20 @@ class TestSimples(TestCase):
         self.assertEqual(dos.tipo, Guardia.FES_FES)
         self.assertEqual(tres.tipo, Guardia.FES_FES)
         self.assertEqual(cuatro.tipo, Guardia.LAB_LAB)
+
+    def test_set_calendario(self):
+        Guardia.objects.set_calendario(2015, 'festivos.txt')
+        festivos = list(
+            Guardia.objects.filter(tipo=Guardia.FES_FES)
+        )+list(
+            Guardia.objects.filter(tipo=Guardia.FES_LAB)
+        )
+        with open('festivos.txt', 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                unfestivo = Guardia.objects.get(fecha=datetime.strptime(row[0], "%Y-%m-%d").date())
+                self.assertIn(unfestivo, festivos)
+
 
     def test_get_numDiasTipos(self):
         Total = 0
@@ -106,16 +123,70 @@ class TestComplejos(TestCase):
                    'seis', 'siete', 'ocho', 'nueve', 'diez',
                    'once', 'doce', 'trece', 'catorce']
 
+        self.organ = mommy.make('guardias.organizacion', nombre='Infanta Sofía, Servicio RX')
+        self.centro = mommy.make('guardias.centro', organizacion=self.organ)
 
-
+        usuarios=[]
         for nombre in nombres:
-            mommy.make('User', name=nombre)
-            usuario = User.objects.get(name=nombre)
+            usuario = mommy.make('users.User', name=nombre, centro=self.centro)
+            usuarios.append(usuario)
             VacacionesAnuales.objects.create(
                 persona=usuario,
                 año=2015,
                 dias_de_vacaciones=22
             )
-        mommy.make('organizacion.centro', supervisor=usuario)
-        pass
+        self.centro.supervisor=usuario
+        self.centro.save()
 
+        Guardia.objects.set_calendario(2015, 'festivos.txt')
+        Guardia.objects.set_calendario(2014, 'festivos_old.txt')
+        corriente = Guardia.objects.get_all_shifts_year(2015)
+        anterior  = Guardia.objects.get_all_shifts_year(2014)
+        self.assertEqual(len(corriente), 365)
+        random.seed(1)
+        for g in (list(corriente)+list(anterior)):
+            g.owner = random.choice(usuarios)
+            g.save()
+
+
+
+    def test_grande1(self):
+        print('Test Grande 1')
+        usuarios = User.objects.all()
+        self.assertEqual(len(usuarios), 14)
+        vacaciones = VacacionesAnuales.objects.all()
+        self.assertEqual(len(vacaciones), 14)
+        cuantos = Centro.objects.all()[0]
+        self.assertEqual(cuantos.supervisor.name, 'catorce')
+        self.assertEqual(cuantos.organizacion.nombre, 'Infanta Sofía, Servicio RX')
+
+        hoy = date(2015,12,31)
+        totales = []
+        for usuario in usuarios:
+            subtotal = 0
+            for tipo, leyenda in Guardia.TIPOS_GUARDIA:
+                cuantas = usuario.num_guardias_tipo_asignadas(hoy, tipo)
+                subtotal += cuantas
+                print('Usuario: {} tiene {} guardias del tipo {}'.format(
+                    usuario.name,
+                    cuantas,
+                    tipo
+                ))
+            totales.append([usuario.name, subtotal])
+        for res1, res2 in totales:
+            print(res1, ": ", res2)
+
+    def test_grande2(self):
+        print('Test Grande 2')
+        usuarios = User.objects.all()
+        self.assertEqual(len(usuarios), 14)
+        vacaciones = VacacionesAnuales.objects.all()
+        self.assertEqual(len(vacaciones), 14)
+        cuantos = Centro.objects.all()[0]
+        self.assertEqual(cuantos.supervisor.name, 'catorce')
+        self.assertEqual(cuantos.organizacion.nombre, 'Infanta Sofía, Servicio RX')
+
+        hoy = date(2015,6,15)
+
+        respuesta = User.guardias.get_next_user_tipo(0, hoy, self.centro)
+        pass

@@ -3,8 +3,9 @@ from datetime import datetime
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
-from nike.users.models import User
 from guardias.managers import guardiasManager
+from nike.users.models import User
+
 # Create your models here.
 
 
@@ -20,7 +21,7 @@ class Organizacion(models.Model):
 class Centro(models.Model):
     nombre = models.CharField(max_length=100)
     organizacion = models.ForeignKey(Organizacion, blank=True, null=True)
-    supervisor = models.ForeignKey(User, blank=True, null=True)
+    supervisor = models.ForeignKey(User, related_name='supervisor', blank=True, null=True)
 
     def __str__(self):
         return self.nombre
