@@ -15,7 +15,7 @@ from guardias.exceptions import IllegalArgumentError
 
 class guardiasManager(models.Manager):
 
-    def check_existencia(self, year):
+    def check_existencia(self, year, centro_id):
         """
         Compruebo si existe el calendario.
         :param year:
@@ -23,12 +23,12 @@ class guardiasManager(models.Manager):
         """
         try:
             primerdia = datetime(year, 1, 1).toordinal()
-            guardia1 = self.get(pk=primerdia)
+            guardia1 = self.get(fecha=primerdia, centro=centro_id)
             return True
         except ObjectDoesNotExist:
             return False
 
-    def check_consistencia(self, year):
+    def check_consistencia(self, year, centro_id):
         """
         Veo la consistencia del calendario. Tiene que haber el correcto número de días, y tienen que ser
         consecutivos. Si falla alguna condición se arroja una excepción que tiene que ser capturada
@@ -36,70 +36,73 @@ class guardiasManager(models.Manager):
         :param year:
         :return:
         """
-        if self.check_existencia(year):
+        if self.check_existencia(year, centro_id):
             inicio = datetime(year, 1, 1).toordinal()
             finaño = datetime(year, 12, 31).toordinal()
-            misdias = super(guardiasManager, self).get_queryset().filter(id__gte=inicio, id__lte=finaño)
+            misdias = self.filter(fecha__gte=inicio, fecha__lte=finaño, centro=centro_id)
             if (finaño-inicio+1) != len(misdias):
                 raise ConsistenciaCalendario(
                     "Error: intervalo entre final y principio de año no coincide con días devueltos")
-            for guardia in misdias:
-                self.check_fecha(guardia)
+            # for guardia in misdias:
+            #     self.check_fecha(guardia)
         else:
             raise NoExisteCalendario("El calendario para el año {} no existe".format(year))
 
-    def check_fecha(self, dia):
-        """
-        una de las comprobaciones de consistencia del calendario. El id tiene que ser el ordinal de fecha.
-        Si falla arroja una excepción.
-        :param dia:
-        :return:
-        """
-        if dia.fecha.toordinal() != dia.id:
-            raise ConsistenciaCalendario(
-                "Error: guardia con fecha no coincidente con el ordinal"
-            )
+    # def check_fecha(self, dia):
+    #     """
+    #     una de las comprobaciones de consistencia del calendario. El id tiene que ser el ordinal de fecha.
+    #     Si falla arroja una excepción.
+    #     :param dia:
+    #     :return:
+    #     """
+    #     if dia.fecha.toordinal() != dia.id:
+    #         raise ConsistenciaCalendario(
+    #             "Error: guardia con fecha no coincidente con el ordinal"
+    #         )
 
-    def set_allSundaysSaturdays(self, year):
+    def set_allSundaysSaturdays(self, year, centro_id):
         """
         Coloco todos los domingos a sábados en primera instancia
         :param year:
         :return:
         """
         for d in alldaysinyear(year, 6):
-            g = self.get(pk=d.toordinal())
+            g = self.get(fecha=d.toordinal(), centro=centro_id)
             g.tipo = self.model.FES_FES
             g.save()
 
-    def set_allSaturdays (self, year):
+    def set_allSaturdays (self, year, centro_id):
         """
         Coloco todos los sábados a sábado en primera instancia
         :param year:
         :return:
         """
         for d in alldaysinyear(year, 5):
-            g = self.get(pk=d.toordinal())
+            g = self.get(fecha=d.toordinal(), centro=centro_id)
             g.tipo = self.model.FES_FES
             g.save()
 
-    def crea_calendario(self, year):
+    def crea_calendario(self, year, centro_id):
         """
         Si no existe, creo el calendario dado por year. Si existe arrojo una excepción
         para que se atrape aguas arriba
         :param year:
         :return:
         """
-        if not self.check_existencia(year):
+        from .models import Centro
+        if not self.check_existencia(year, centro_id):
             inicio = datetime(year, 1, 1).toordinal()
             finaño = datetime(year, 12, 31).toordinal()
-            for anio in range(inicio, finaño+1):
-                self.create(
-                    fecha = datetime.fromordinal(anio)
-                )
+            micentro = Centro.objects.get(pk=centro_id)
+            for dia in range(inicio, finaño+1):
+                try:
+                    self.create(fecha = dia,centro=micentro)
+                except Exception as e:
+                    pass
         else:
             raise ExisteCalendario("El calendario para el año {} ya existe".format(year))
 
-    def set_FES_LAB(self, year):
+    def set_FES_LAB(self, year, centro_id):
         """
         Para todos los festivos, detecto cuales tienen después laborable
         (LAB_LAB o LAB_FES, ya que los LAB_LAB_FES todavía no están puestos), y
@@ -107,45 +110,45 @@ class guardiasManager(models.Manager):
         :param year:
         :return:
         """
-        festivos = self.filter(tipo=self.model.FES_FES).order_by('id')
+        festivos = self.filter(tipo=self.model.FES_FES, centro=centro_id).order_by('fecha')
         for dia in festivos:
             try:
-                siguiente = self.get(pk=dia.pk+1)
+                siguiente = self.get(fecha=dia.fecha+1, centro=centro_id)
             except ObjectDoesNotExist:
                 continue
             if siguiente.tipo == self.model.LAB_LAB or siguiente.tipo == self.model.LAB_FES:
                 dia.tipo = self.model.FES_LAB # ESTE DÍA ES TIPO SÁBADO
                 dia.save()
 
-    def set_LAB_FES(self, year):
+    def set_LAB_FES(self, year, centro_id):
         """
         Busco los viernes (laborable (LAB_LAB) que estén antes de un Festivo (FES_FES o FES_LAB), ya
         que pueden ser días antes de festivo (FES_LAB)
         :param year:
         :return:
         """
-        laborables = self.filter(tipo=self.model.LAB_LAB).order_by('id')
+        laborables = self.filter(tipo=self.model.LAB_LAB, centro_id=centro_id).order_by('fecha')
         for dia in laborables:
             try:
-                siguiente = self.get(pk=dia.pk+1)
+                siguiente = self.get(fecha=dia.fecha+1, centro_id=centro_id)
             except ObjectDoesNotExist as e:
                 continue
             if siguiente.tipo == self.model.FES_FES or siguiente.tipo == self.model.FES_LAB:
                 dia.tipo = self.model.LAB_FES
                 dia.save()
 
-    def set_LAB_LAB_FES(self, year):
-        laborables = self.filter(tipo=self.model.LAB_LAB).order_by('id')
+    def set_LAB_LAB_FES(self, year, centro_id):
+        laborables = self.filter(tipo=self.model.LAB_LAB, centro_id=centro_id).order_by('fecha')
         for dia in laborables:
             try:
-                siguiente = self.get(pk=dia.pk+1)
+                siguiente = self.get(fecha=dia.fecha+1, centro_id=centro_id)
             except ObjectDoesNotExist:
                 continue
             if siguiente.tipo == self.model.LAB_FES:
                 dia.tipo = self.model.LAB_LAB_FES
                 dia.save()
 
-    def set_calendario(self, year, fichero):
+    def set_calendario(self, year, fichero, centro_id):
         """
         Secuencia para la creación del calendario. Está dividida en
         varias fases:
@@ -166,7 +169,7 @@ class guardiasManager(models.Manager):
 
         # 1
         try:
-            self.crea_calendario(year)
+            self.crea_calendario(year, centro_id)
             # print('OK: Calendario creado para el año {}'.format(year))
         except ExisteCalendario:
             # print("""
@@ -183,27 +186,27 @@ class guardiasManager(models.Manager):
                 if festivo.year != year:
                     print("Festivo en el fichero no es del año {}".format(year))
                 festivo=festivo.toordinal()
-                g = self.get(pk=festivo)
+                g = self.get(fecha=festivo)
                 g.tipo = self.model.FES_LAB
                 g.save()
         # print('OK: Añadidos los festivos para el año {}'.format(year))
         # 3
-        self.set_allSundaysSaturdays(year) # Domingos FES_FES
+        self.set_allSundaysSaturdays(year, centro_id) # Domingos FES_FES
         # print('OK: Domingos como sábados para el año {}'.format(year))
         # 4
-        self.set_allSaturdays(year) # Sábados FES_FES
+        self.set_allSaturdays(year, centro_id) # Sábados FES_FES
         # print('OK: Sábados para el año {}'.format(year))
 
         # 5
-        self.set_FES_LAB(year)
+        self.set_FES_LAB(year, centro_id)
 
         #6
-        self.set_LAB_FES(year)
+        self.set_LAB_FES(year, centro_id)
 
         # 7
-        self.set_LAB_LAB_FES(year)
+        self.set_LAB_LAB_FES(year, centro_id)
 
-    def get_dias_tipo_year(self, year, ptipo):
+    def get_dias_tipo_year(self, year, ptipo, centro_id):
         """
         Proporciona el número los días de un cierto tipo
         en el calendario de guardias. Por ejemplo,
@@ -213,45 +216,49 @@ class guardiasManager(models.Manager):
         :param ptipo: tipo de guardia
         :return: una query de Guardia
         """
-        dias = self.filter(tipo=ptipo).order_by('pk')
+        dias = self.filter(tipo=ptipo, centro=centro_id).order_by('fecha')
         return dias
 
-    def get_calendario(self, year):
+    def get_calendario(self, year, centro_id):
         """
         Proporciona una lista de listas [número días, tipo de día, query de días].
         Esta lista está ordenada según el número de días de forma ascendente. La
         primera lista corresponde al tipo de guardia del que hay menos en el año, y
         por tanto más rígido a la hora de programar.
         El propósito de esta función es proporcionar en orden las guardias que hay que
-        asignar, primero las de las que hay menos, y finalmente de las que hay más
+        asignar, primero las de las que hay menos, y finalmente de las que hay más.
+        ************
+        Esto último no lo tengo claro. Quizá esto añada demasiada rigidez. Quizá es más
+        fácil empezar con los que hay más (lab_lab), y acabar con los que hay menos
+        ************
         :param year:
         :return:
         """
         micalendario = []
 
         mtipo = self.model.LAB_LAB
-        respuesta = self.get_dias_tipo_year(year, mtipo)
+        respuesta = self.get_dias_tipo_year(year, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.LAB_LAB_FES
-        respuesta = self.get_dias_tipo_year(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.LAB_FES
-        respuesta = self.get_dias_tipo_year(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.FES_FES
-        respuesta = self.get_dias_tipo_year(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.FES_LAB
-        respuesta = self.get_dias_tipo_year(2015, mtipo)
+        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         return sorted(micalendario, key=itemgetter(0))
 
-    def get_num_festivos(self, comienzo, final):
+    def get_num_festivos(self, comienzo, final, centro_id):
         """
         Proporciona el número de festivos entre dos fechas
         :param comienzo:
@@ -262,10 +269,12 @@ class guardiasManager(models.Manager):
             raise IllegalArgumentError("Error en los argumentos a get_num_festivos")
         return len(
             self.filter(
-                pk__gte=comienzo.toordinal()
+                fecha__gte=comienzo.toordinal()
             ).filter(
-                pk__lte=final.toordinal()
-            ).filter(tipo__gte=3))
+                fecha__lte=final.toordinal()
+            ).filter(tipo__gte=3
+            ).filter(centro_id=centro_id)
+        )
 
     def set_vacaciones(self, rangodias, persona):
         """
@@ -283,7 +292,7 @@ class guardiasManager(models.Manager):
 
         if correcto:
             for dia in rangodias:
-                miguardia = self.get(pk=dia.toordinal())
+                miguardia = self.get(fecha=dia.toordinal())
                 miguardia.ausencias.add(persona)
                 miguardia.save()
 
@@ -291,10 +300,10 @@ class guardiasManager(models.Manager):
             raise IllegalArgumentError("Error en los argumentos a set_vacaciones")
 
     def num_guardias_tipo_asignadas(self, quien, hoy, tipo):
-        if not isinstance(hoy, date) or not isinstance(quien, User):
+        if not isinstance(quien, User):
             raise IllegalArgumentError("Error en los argumentos a num_guardias_tipo_asignadas")
-        añocorriente = hoy.year
-        inicio = date(añocorriente, 1, 1)
+        añocorriente = date.fromordinal(hoy).year
+        inicio = date(añocorriente, 1, 1).toordinal()
         return self.filter(
             owner = quien
         ).filter(
@@ -307,7 +316,19 @@ class guardiasManager(models.Manager):
 
     def get_all_shifts_year(self, año):
         return self.filter(
-            fecha__gte=date(año,1,1)
+            fecha__gte=date(año,1,1).toordinal()
         ).filter(
-            fecha__lte=date(año,12,31)
+            fecha__lte=date(año,12,31).toordinal()
         )
+
+    def set_shifts(self, tipo, misguardias):
+        for g in misguardias:
+            respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, self.centro)
+            g.owner = respuesta[0][4]
+            g.save()
+
+    def program_shifts_all_year(self, year):
+        micalendario = self.get_calendario(year)
+        for cuantas, tipo, guardias in micalendario:
+            self.set_shifts(tipo, guardias)
+

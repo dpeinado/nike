@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand, CommandError
 from guardias.models import Guardia, VacacionesAnuales
 from guardias.exceptions import NoExisteCalendario, ConsistenciaCalendario, ExisteCalendario
 from nike.users.models import User
+from django.core.exceptions import ObjectDoesNotExist
 
 class Command(BaseCommand):
     help = """
@@ -12,11 +13,23 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('year', nargs='+', type=int)
         parser.add_argument('ndias', nargs='+', type=int)
+        parser.add_argument('centro_id', nargs='+', type=int)
 
     def handle(self, *args, **options):
         year = options['year'][0]
         ndias = options['ndias'][0]
-        for user in User.objects.all():
+        centro_id = options['centro_id'][0]
+        from guardias.models import Centro
+        try:
+            micentro = Centro.objects.get(pk=centro_id)
+        except ObjectDoesNotExist:
+            self.stdout.write("Error: no existe centro con id = {}".format(centro_id))
+            return
+        try:
+            usuarios = User.objects.filter(centro=micentro)
+        except ObjectDoesNotExist:
+            self.stdout.write("Error: no existen usuarios en el centro: {}".format(micentro.nombre))
+        for user in usuarios:
             v1=VacacionesAnuales.objects.filter(
                 persona=user,
                 año=year
@@ -31,6 +44,4 @@ class Command(BaseCommand):
                     año=year,
                     dias_de_vacaciones=ndias
                 )
-
-
-
+                self.stdout.write("Ok: Calendario de vacaciones creado")

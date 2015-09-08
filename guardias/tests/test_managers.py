@@ -17,35 +17,44 @@ from nike.users.models import User
 
 
 class TestSimples(TestCase):
+    def setUp(self):
+        nombres = ['uno', 'dos', 'tres', 'cuatro', 'cinco',
+                   'seis', 'siete', 'ocho', 'nueve', 'diez',
+                   'once', 'doce', 'trece', 'catorce']
+
+        self.organ = mommy.make('guardias.organizacion', nombre='Infanta Sofía, Servicio RX')
+        self.centro = mommy.make('guardias.centro', organizacion=self.organ)
+        self.centro2 =mommy.make('guardias.centro', organizacion=self.organ)
+
 
     def test_setallsundays(self):
-        Guardia.objects.crea_calendario(2015)
-        Guardia.objects.check_consistencia(2015)
-        Guardia.objects.set_allSundaysSaturdays(2015)
-        uno    = Guardia.objects.get(fecha=date(2015, 1, 4))
-        dos    = Guardia.objects.get(fecha=date(2015, 3, 8))
-        tres   = Guardia.objects.get(fecha=date(2015, 9, 13))
-        cuatro = Guardia.objects.get(fecha=date(2015, 9, 15))
+        Guardia.objects.crea_calendario(2015, self.centro.id)
+        Guardia.objects.check_consistencia(2015, self.centro.id)
+        Guardia.objects.set_allSundaysSaturdays(2015, self.centro.id)
+        uno    = Guardia.objects.get(fecha=date(2015, 1, 4).toordinal(), centro=self.centro.id)
+        dos    = Guardia.objects.get(fecha=date(2015, 3, 8).toordinal(), centro=self.centro.id)
+        tres   = Guardia.objects.get(fecha=date(2015, 9, 13).toordinal(), centro=self.centro.id)
+        cuatro = Guardia.objects.get(fecha=date(2015, 9, 15).toordinal(), centro=self.centro.id)
         self.assertEqual(uno.tipo, Guardia.FES_FES)
         self.assertEqual(dos.tipo, Guardia.FES_FES)
         self.assertEqual(tres.tipo, Guardia.FES_FES)
         self.assertEqual(cuatro.tipo, Guardia.LAB_LAB)
 
     def test_setallsaturdays(self):
-        Guardia.objects.crea_calendario(2015)
-        Guardia.objects.check_consistencia(2015)
-        Guardia.objects.set_allSaturdays(2015)
-        uno    = Guardia.objects.get(fecha=date(2015, 1, 3))
-        dos    = Guardia.objects.get(fecha=date(2015, 3, 7))
-        tres   = Guardia.objects.get(fecha=date(2015, 9, 12))
-        cuatro = Guardia.objects.get(fecha=date(2015, 9, 15))
+        Guardia.objects.crea_calendario(2015, self.centro.id)
+        Guardia.objects.check_consistencia(2015, self.centro.id)
+        Guardia.objects.set_allSaturdays(2015, self.centro.id)
+        uno    = Guardia.objects.get(fecha=date(2015, 1, 3).toordinal(), centro=self.centro.id)
+        dos    = Guardia.objects.get(fecha=date(2015, 3, 7).toordinal(), centro=self.centro.id)
+        tres   = Guardia.objects.get(fecha=date(2015, 9, 12).toordinal(), centro=self.centro.id)
+        cuatro = Guardia.objects.get(fecha=date(2015, 9, 15).toordinal(), centro=self.centro.id)
         self.assertEqual(uno.tipo, Guardia.FES_FES)
         self.assertEqual(dos.tipo, Guardia.FES_FES)
         self.assertEqual(tres.tipo, Guardia.FES_FES)
         self.assertEqual(cuatro.tipo, Guardia.LAB_LAB)
 
     def test_set_calendario(self):
-        Guardia.objects.set_calendario(2015, 'festivos.txt')
+        Guardia.objects.set_calendario(2015, 'festivos.txt', self.centro.id)
         festivos = list(
             Guardia.objects.filter(tipo=Guardia.FES_FES)
         )+list(
@@ -54,35 +63,35 @@ class TestSimples(TestCase):
         with open('festivos.txt', 'r') as f:
             reader = csv.reader(f)
             for row in reader:
-                unfestivo = Guardia.objects.get(fecha=datetime.strptime(row[0], "%Y-%m-%d").date())
+                unfestivo = Guardia.objects.get(fecha=datetime.strptime(row[0], "%Y-%m-%d").date().toordinal())
                 self.assertIn(unfestivo, festivos)
 
 
     def test_get_numDiasTipos(self):
         Total = 0
-        Guardia.objects.set_calendario(2015, 'festivos.txt')
+        Guardia.objects.set_calendario(2015, 'festivos.txt', self.centro.id)
         mtipo = Guardia.LAB_LAB
-        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo, self.centro.id)
         # print("Tipo {}: {}".format(mtipo, len(respuesta)))
         self.assertEqual(len(respuesta), 140)
         Total += len(respuesta)
         mtipo = Guardia.LAB_LAB_FES
-        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo, self.centro.id)
         # print("Tipo {}: {}".format(mtipo, len(respuesta)))
         self.assertEqual(len(respuesta), 51)
         Total += len(respuesta)
         mtipo = Guardia.LAB_FES
-        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo, self.centro.id)
         # print("Tipo {}: {}".format(mtipo, len(respuesta)))
         self.assertEqual(len(respuesta), 58)
         Total += len(respuesta)
         mtipo = Guardia.FES_FES
-        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo, self.centro.id)
         # print("Tipo {}: {}".format(mtipo, len(respuesta)))
         self.assertEqual(len(respuesta), 53)
         Total += len(respuesta)
         mtipo = Guardia.FES_LAB
-        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo)
+        respuesta = Guardia.objects.get_dias_tipo_year(2015, mtipo, self.centro.id)
         # print("Tipo {}: {}".format(mtipo, len(respuesta)))
         self.assertEqual(len(respuesta), 63)
         Total += len(respuesta)
@@ -91,8 +100,8 @@ class TestSimples(TestCase):
         self.assertEqual(Total, 365)
 
     def test_get_calendario(self):
-        Guardia.objects.set_calendario(2015, 'festivos.txt')
-        uno = Guardia.objects.get_calendario(2015)
+        Guardia.objects.set_calendario(2015, 'festivos.txt', self.centro.id)
+        uno = Guardia.objects.get_calendario(2015, self.centro.id)
         self.assertEqual(uno[0][0], 51)
         self.assertEqual(uno[1][0], 53)
         self.assertEqual(uno[2][0], 58)
@@ -100,20 +109,20 @@ class TestSimples(TestCase):
         self.assertEqual(uno[4][0], 140)
 
     def test_get_num_festivos(self):
-        Guardia.objects.set_calendario(2015, 'festivos.txt')
-        respuesta=Guardia.objects.get_num_festivos(date(2015,1,1), date(2015,2,15))
+        Guardia.objects.set_calendario(2015, 'festivos.txt', self.centro.id)
+        respuesta=Guardia.objects.get_num_festivos(date(2015,1,1), date(2015,2,15), self.centro.id)
         self.assertEqual(respuesta,17)
 
     def test_set_vacaciones(self):
         from core.utility import get_range_dates_list
-        Guardia.objects.set_calendario(2015, 'festivos.txt')
+        Guardia.objects.set_calendario(2015, 'festivos.txt', self.centro.id)
         user1 = self.make_user()
         l1 = get_range_dates_list(date(2015,1,28), date(2015,2,7))
         l2 =[date(2015,5,8),date(2015,6,20)]
         lista_vacaciones = l1+l2
         Guardia.objects.set_vacaciones(lista_vacaciones, user1)
         for dia in lista_vacaciones:
-            mio=Guardia.objects.get(pk=dia.toordinal())
+            mio=Guardia.objects.get(fecha=dia.toordinal())
             self.assertEqual(mio.ausencias.all()[0], user1)
 
 
@@ -138,15 +147,8 @@ class TestComplejos(TestCase):
         self.centro.supervisor=usuario
         self.centro.save()
 
-        Guardia.objects.set_calendario(2015, 'festivos.txt')
-        Guardia.objects.set_calendario(2014, 'festivos_old.txt')
-        corriente = Guardia.objects.get_all_shifts_year(2015)
-        anterior  = Guardia.objects.get_all_shifts_year(2014)
-        self.assertEqual(len(corriente), 365)
-        random.seed(1)
-        for g in (list(corriente)+list(anterior)):
-            g.owner = random.choice(usuarios)
-            g.save()
+        Guardia.objects.set_calendario(2015, 'festivos.txt', self.centro.id)
+        Guardia.objects.set_calendario(2014, 'festivos_old.txt', self.centro.id)
 
 
 
@@ -160,7 +162,16 @@ class TestComplejos(TestCase):
         self.assertEqual(cuantos.supervisor.name, 'catorce')
         self.assertEqual(cuantos.organizacion.nombre, 'Infanta Sofía, Servicio RX')
 
-        hoy = date(2015,12,31)
+        corriente = Guardia.objects.get_all_shifts_year(2015)
+        anterior  = Guardia.objects.get_all_shifts_year(2014)
+        self.assertEqual(len(corriente), 365)
+        random.seed(1)
+        for g in (list(corriente)+list(anterior)):
+            g.owner = random.choice(usuarios)
+            g.save()
+
+
+        hoy = date(2015,12,31).toordinal()
         totales = []
         for usuario in usuarios:
             subtotal = 0
@@ -186,7 +197,16 @@ class TestComplejos(TestCase):
         self.assertEqual(cuantos.supervisor.name, 'catorce')
         self.assertEqual(cuantos.organizacion.nombre, 'Infanta Sofía, Servicio RX')
 
-        hoy = date(2015,6,15)
+        corriente = Guardia.objects.get_all_shifts_year(2015)
+        anterior  = Guardia.objects.get_all_shifts_year(2014)
+        self.assertEqual(len(corriente), 365)
+        # random.seed(1)
+        # for g in (list(corriente)+list(anterior)):
+        #     g.owner = random.choice(usuarios)
+        #     g.save()
+
+
+        hoy = date(2015,6,15).toordinal()
 
         respuesta = User.guardias.get_next_user_tipo(0, hoy, self.centro)
         pass

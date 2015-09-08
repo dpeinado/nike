@@ -11,15 +11,17 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('fichero', nargs='+')
         parser.add_argument('year', nargs='+', type=int)
+        parser.add_argument('centro_id', nargs='+', type=int)
 
     def handle(self, *args, **options):
         filename = options['fichero'][0]
         year = options['year'][0]
+        centro_id = options['centro_id'][0]
 
 
         # Gestionar las excepciones
         try:
-            Guardia.objects.set_calendario(year, filename)
+            Guardia.objects.set_calendario(year, filename, centro_id)
             self.stdout.write("OK")
         except:
             self.stdout.write("Error")

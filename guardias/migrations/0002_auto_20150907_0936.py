@@ -8,8 +8,8 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('guardias', '0001_initial'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
@@ -25,22 +25,27 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='guardia',
+            name='centro',
+            field=models.ForeignKey(to='guardias.Centro'),
+        ),
+        migrations.AddField(
+            model_name='guardia',
             name='doneby',
-            field=models.ForeignKey(null=True, to=settings.AUTH_USER_MODEL, related_name='doneby'),
+            field=models.ForeignKey(related_name='doneby', to=settings.AUTH_USER_MODEL, null=True),
         ),
         migrations.AddField(
             model_name='guardia',
             name='owner',
-            field=models.ForeignKey(null=True, to=settings.AUTH_USER_MODEL, related_name='owner'),
+            field=models.ForeignKey(related_name='owner', to=settings.AUTH_USER_MODEL, null=True),
         ),
         migrations.AddField(
             model_name='centro',
             name='organizacion',
-            field=models.ForeignKey(null=True, blank=True, to='guardias.Organizacion'),
+            field=models.ForeignKey(to='guardias.Organizacion', null=True, blank=True),
         ),
         migrations.AddField(
             model_name='centro',
             name='supervisor',
-            field=models.ForeignKey(null=True, blank=True, to=settings.AUTH_USER_MODEL, related_name='supervisor'),
+            field=models.ForeignKey(related_name='supervisor', to=settings.AUTH_USER_MODEL, null=True, blank=True),
         ),
     ]

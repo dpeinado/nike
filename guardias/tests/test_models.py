@@ -38,14 +38,23 @@ class TestCentro(TestCase):
         self.assertEqual(self.centro2.supervisor, self.user)
 
 class TestGuardia(TestCase):
+    def setUp(self):
+
+        self.organizacion = Organizacion.objects.create(
+            nombre='Hospital Infanta Sofía')
+
+        self.centro1 = Centro.objects.create(
+            nombre = 'Servicio de Radiodiagnóstico')
+
+        self.user = self.make_user()
+
 
     def test_creacion(self):
         self.guardia = Guardia.objects.create(
-            fecha = datetime(2015, 8, 26).date(),
-            tipo = Guardia.LAB_LAB
+            fecha = datetime(2015, 8, 26).date().toordinal(),
+            tipo = Guardia.LAB_LAB,
+            centro = self.centro1
         )
-        self.assertEqual(self.guardia.id,
-                         735836)
-        self.assertEqual(self.guardia.tipo,
-                         0)
+        self.assertEqual(self.guardia.fecha, 735836)
+        self.assertEqual(self.guardia.tipo, 0)
 

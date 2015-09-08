@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -51,8 +51,8 @@ class Guardia(models.Model):
                      (FES_LAB, """
                         Día festivo con día posterior laborable.
                         (Tipo Domingo en semanas sin festivos)""")]
-    id = models.IntegerField(primary_key=True, unique=True)
-    fecha = models.DateField()
+    fecha = models.IntegerField()
+    centro = models.ForeignKey(Centro)
     tipo = models.IntegerField(choices=TIPOS_GUARDIA, default=LAB_LAB, null=True, blank=True)
     owner = models.ForeignKey(User, null=True, related_name="owner")
     doneby = models.ForeignKey(User, null=True, related_name="doneby")
@@ -63,13 +63,13 @@ class Guardia(models.Model):
     class Meta:
         ordering = ['id']
 
-    def save(self, *args, **kwargs):
-        if self.pk is None:
-            self.id = self.fecha.toordinal()
-        super(Guardia, self).save()
+    # def save(self, *args, **kwargs):
+    #     if self.pk is None:
+    #         self.id = self.fecha.toordinal()
+    #     super(Guardia, self).save()
 
     def __str__(self):
-        return "{0}: {1} -- {2}".format(self.fecha, self.tipo, self.owner)
+        return "{0}: {1} -- {2}".format(date.fromordinal(self.fecha), self.tipo, self.owner)
 
 
 
@@ -87,15 +87,3 @@ class VacacionesAnuales(models.Model):
     @property
     def dias_restantes(self, comienzo, final):
         pass
-
-
-
-# @python_2_unicode_compatible
-# class PeriodoVacaciones(models.Model):
-#     vacaciones = models.ForeignKey(VacacionesAnuales, related_name='periodos')
-#     comienzo = models.DateField()
-#     final = models.DateField()
-#
-#     @property
-#     def dias(self):
-#         return (self.final-self.comienzo).days-Guardia.objects.get_num_festivos(self.comienzo, self.final)+1

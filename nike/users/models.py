@@ -30,10 +30,8 @@ class User(AbstractUser):
 
     def num_guardias_tipo_asignadas(self, hoy, tipo):
         from guardias.models import Guardia
-        if not isinstance(hoy, date):
-            raise IllegalArgumentError("Error en los argumentos a num_guardias_tipo_asignadas")
-        añocorriente = hoy.year
-        inicio = date(añocorriente, 1, 1)
+        añocorriente = date.fromordinal(hoy).year
+        inicio = date(añocorriente, 1, 1).toordinal()
         return Guardia.objects.filter(
             owner = self
         ).filter(
@@ -46,10 +44,8 @@ class User(AbstractUser):
 
     def num_guardias_total_asignadas(self, hoy, tipo):
         from guardias.models import Guardia
-        if not isinstance(hoy, date):
-            raise IllegalArgumentError("Error en los argumentos a num_guardias_total_asignadas")
-        añocorriente = hoy.year
-        inicio = date(añocorriente, 1, 1)
+        añocorriente = date.fromordinal(hoy).year
+        inicio = date(añocorriente, 1, 1).toordinal()
         return Guardia.objects.filter(
             owner = self
         ).filter(
@@ -59,9 +55,9 @@ class User(AbstractUser):
         ).count()
 
     def num_last_year_total_shifts(self, hoy):
-        añocorriente = hoy.year
-        inicio = date(añocorriente-1, 1, 1)
-        fin = date(añocorriente-1, 12, 31)
+        añocorriente = date.fromordinal(hoy).year
+        inicio = date(añocorriente-1, 1, 1).toordinal()
+        fin = date(añocorriente-1, 12, 31).toordinal()
         from guardias.models import Guardia
 
         queryset = Guardia.objects.filter(
