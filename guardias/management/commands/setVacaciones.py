@@ -7,8 +7,9 @@ from django.core.exceptions import ObjectDoesNotExist
 
 class Command(BaseCommand):
     help = """
-        Lee de la línea de parámetros el año y el número de días
-        de vacaciones para todos"""
+            Tercero de los comandos para inicializar que se tiene que correr
+           """
+
 
     def add_arguments(self, parser):
         parser.add_argument('year', nargs='+', type=int)

@@ -11,6 +11,9 @@ from nike.users.models import User
 
 @python_2_unicode_compatible
 class Organizacion(models.Model):
+    """
+    Clase para definir una organización a la cual pueden pertenecer varios centros
+    """
     nombre = models.CharField(max_length=100)
 
     def __str__(self):
@@ -19,6 +22,10 @@ class Organizacion(models.Model):
 
 @python_2_unicode_compatible
 class Centro(models.Model):
+    """
+    Clase que define un centro de trabajo. A este centro están adscritos los trabajadores
+    a turnos
+    """
     nombre = models.CharField(max_length=100)
     organizacion = models.ForeignKey(Organizacion, blank=True, null=True)
     supervisor = models.ForeignKey(User, related_name='supervisor', blank=True, null=True)
@@ -29,6 +36,23 @@ class Centro(models.Model):
 
 @python_2_unicode_compatible
 class Guardia(models.Model):
+    """
+    Clase para el calendario de guardias. Se generan 365 por año y centro.
+    Los miembros son:
+        fecha: entero date.toordinal. Día en el que tiene lugar la guardia
+        centro: centro al cual pertenece en calendario de guardias.
+        tipo: tipo de guardia. Ver más adelante en la definición de TIPOS_GUARDIA
+        owner: el propietario de la guardia. Este es al primero qeu se le asignó.
+                Si después se cambia la guardia cuando está congelado el calendario
+                el owner se mantiene. Si no está congelado entonces si que puede
+                cambiar el owner.
+        doneby: es el trabajador que realiza la guardia
+        ausencias: se apunta a los trabajadores que este día están ausentes, bien por
+                    vacaciones, bien por días de libre disposición, enfermedad, baja, etc.
+                    Es importante a la hora de hacer la programación. Una enfermedad de última
+                    hora que no afecta al calendario de guardias no hace falta que se introduzca
+
+    """
     LAB_LAB = 0
     LAB_LAB_FES = 1
     LAB_FES = 2
@@ -76,6 +100,9 @@ class Guardia(models.Model):
 
 @python_2_unicode_compatible
 class VacacionesAnuales(models.Model):
+    """
+    Clase para definir el número de días de vacaciones y de libre disposición que se tienen al año
+    """
     persona = models.ForeignKey(User)
     año = models.IntegerField()
     dias_de_vacaciones = models.IntegerField(default=22)

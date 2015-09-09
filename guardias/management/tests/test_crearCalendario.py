@@ -11,9 +11,9 @@ class createCalendarTest(TestCase):
 
     def test_creacion_error(self):
         out = StringIO()
-        call_command('crearCalendario', 'festivos.txt', '2015', str(self.centro.pk), stdout=out)
+        call_command('crearCalendario', 'ficheros/festivos.txt', '2015', str(self.centro.pk), stdout=out)
         print(out.getvalue())
         self.assertIn('OK', out.getvalue())
-        call_command('crearCalendario', 'festivos.txt', '2015', str(self.centro.pk), stdout=out)
+        call_command('crearCalendario', 'ficheros/festivos.txt', '2015', str(self.centro.pk), stdout=out)
         print(out.getvalue())
         self.assertIn('Error', out.getvalue())

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 from __future__ import absolute_import, unicode_literals
 
 import environ
+import sys
 
 ROOT_DIR = environ.Path(__file__) - 3  # (/a/b/myfile.py - 3 = /)
 APPS_DIR = ROOT_DIR.path('nike')
@@ -103,7 +104,13 @@ DATABASES = {
     'default': env.db("DATABASE_URL", default="postgres:///nike"),
 }
 DATABASES['default']['ATOMIC_REQUESTS'] = True
+#DATABASES['default']['TEST'] = "test_nike"
 
+if 'test' in sys.argv or 'test_coverage' in sys.argv:
+    DATABASES = {
+        # Raises ImproperlyConfigured exception if DATABASE_URL not in os.environ
+        'default': env.db("DATABASE_URL", default="postgres:///nike"),
+    }
 
 # GENERAL CONFIGURATION
 # ------------------------------------------------------------------------------
@@ -114,7 +121,7 @@ DATABASES['default']['ATOMIC_REQUESTS'] = True
 TIME_ZONE = 'UTC'
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#language-code
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-ES'
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#site-id
 SITE_ID = 1

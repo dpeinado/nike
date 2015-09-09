@@ -2,6 +2,9 @@
 
 from django.db import models
 from datetime import datetime, date, timedelta
+import locale
+
+import calendar
 from django.core.exceptions import ObjectDoesNotExist
 from core.utility import alldaysinyear
 import csv
@@ -18,7 +21,8 @@ class guardiasManager(models.Manager):
     def check_existencia(self, year, centro_id):
         """
         Compruebo si existe el calendario.
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return: True si existe, False si no
         """
         try:
@@ -33,7 +37,8 @@ class guardiasManager(models.Manager):
         Veo la consistencia del calendario. Tiene que haber el correcto número de días, y tienen que ser
         consecutivos. Si falla alguna condición se arroja una excepción que tiene que ser capturada
         aguas arriba
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return:
         """
         if self.check_existencia(year, centro_id):
@@ -63,7 +68,8 @@ class guardiasManager(models.Manager):
     def set_allSundaysSaturdays(self, year, centro_id):
         """
         Coloco todos los domingos a sábados en primera instancia
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return:
         """
         for d in alldaysinyear(year, 6):
@@ -74,7 +80,8 @@ class guardiasManager(models.Manager):
     def set_allSaturdays (self, year, centro_id):
         """
         Coloco todos los sábados a sábado en primera instancia
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return:
         """
         for d in alldaysinyear(year, 5):
@@ -86,7 +93,8 @@ class guardiasManager(models.Manager):
         """
         Si no existe, creo el calendario dado por year. Si existe arrojo una excepción
         para que se atrape aguas arriba
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return:
         """
         from .models import Centro
@@ -107,7 +115,8 @@ class guardiasManager(models.Manager):
         Para todos los festivos, detecto cuales tienen después laborable
         (LAB_LAB o LAB_FES, ya que los LAB_LAB_FES todavía no están puestos), y
         los coloco como domingos (FES_LAB)
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return:
         """
         festivos = self.filter(tipo=self.model.FES_FES, centro=centro_id).order_by('fecha')
@@ -124,7 +133,8 @@ class guardiasManager(models.Manager):
         """
         Busco los viernes (laborable (LAB_LAB) que estén antes de un Festivo (FES_FES o FES_LAB), ya
         que pueden ser días antes de festivo (FES_LAB)
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return:
         """
         laborables = self.filter(tipo=self.model.LAB_LAB, centro_id=centro_id).order_by('fecha')
@@ -138,6 +148,13 @@ class guardiasManager(models.Manager):
                 dia.save()
 
     def set_LAB_LAB_FES(self, year, centro_id):
+        """
+        Se buscan los días lab_lab, cuyo día siguiente es un lab_fes. Es decir,
+        buscamos los jueves.
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
+        :return:
+        """
         laborables = self.filter(tipo=self.model.LAB_LAB, centro_id=centro_id).order_by('fecha')
         for dia in laborables:
             try:
@@ -162,8 +179,9 @@ class guardiasManager(models.Manager):
                 el FES_LAB
             6.- Busco los tipo viernes o antes de puente LAB_FES
             7.- Busco los tipo jueves, o laborable antes de uno tipo 6
-        :param year:
-        :param fichero:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
+        :param fichero: fichero de festivos
         :return:
         """
 
@@ -186,7 +204,7 @@ class guardiasManager(models.Manager):
                 if festivo.year != year:
                     print("Festivo en el fichero no es del año {}".format(year))
                 festivo=festivo.toordinal()
-                g = self.get(fecha=festivo)
+                g = self.get(fecha=festivo, centro_id=centro_id)
                 g.tipo = self.model.FES_LAB
                 g.save()
         # print('OK: Añadidos los festivos para el año {}'.format(year))
@@ -214,9 +232,14 @@ class guardiasManager(models.Manager):
         todos los laborables seguidos de laborable del año 2015
         :param year: Año del calendario
         :param ptipo: tipo de guardia
+        :param centro_id: Centro al que pertenece el calendario
         :return: una query de Guardia
         """
-        dias = self.filter(tipo=ptipo, centro=centro_id).order_by('fecha')
+        inicio=date(year,1,1).toordinal()
+        fin=date(year,12,31).toordinal()
+        dias = self.filter(
+            fecha__gte=inicio, fecha__lte=fin,
+            tipo=ptipo, centro=centro_id).order_by('fecha')
         return dias
 
     def get_calendario(self, year, centro_id):
@@ -231,7 +254,8 @@ class guardiasManager(models.Manager):
         Esto último no lo tengo claro. Quizá esto añada demasiada rigidez. Quizá es más
         fácil empezar con los que hay más (lab_lab), y acabar con los que hay menos
         ************
-        :param year:
+        :param year: Año del calendario de guardias
+        :param centro_id: Centro al que pertenece el calendario
         :return:
         """
         micalendario = []
@@ -241,19 +265,19 @@ class guardiasManager(models.Manager):
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.LAB_LAB_FES
-        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
+        respuesta = self.get_dias_tipo_year(year, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.LAB_FES
-        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
+        respuesta = self.get_dias_tipo_year(year, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.FES_FES
-        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
+        respuesta = self.get_dias_tipo_year(year, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         mtipo = self.model.FES_LAB
-        respuesta = self.get_dias_tipo_year(2015, mtipo, centro_id=centro_id)
+        respuesta = self.get_dias_tipo_year(year, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
         return sorted(micalendario, key=itemgetter(0))
@@ -314,21 +338,73 @@ class guardiasManager(models.Manager):
             tipo=tipo
         ).count()
 
-    def get_all_shifts_year(self, año):
+    def get_all_shifts_year(self, año, centro_id):
         return self.filter(
             fecha__gte=date(año,1,1).toordinal()
         ).filter(
             fecha__lte=date(año,12,31).toordinal()
-        )
+        ).filter(centro_id=centro_id)
 
-    def set_shifts(self, tipo, misguardias):
+    def check_shift_between_free_days(self, miguardia, person, d1, d2):
+        if miguardia.fecha == d1:
+            siguiente = self.get(fecha=miguardia.fecha+1, centro=miguardia.centro)
+            if siguiente.owner == person:
+                return False
+        elif miguardia.fecha == d2:
+            anterior = self.get(fecha=miguardia.fecha-1, centro=miguardia.centro)
+            if anterior.owner == person:
+                return False
+        else:
+            siguiente = self.get(fecha=miguardia.fecha+1, centro=miguardia.centro)
+            anterior  = self.get(fecha=miguardia.fecha-1, centro=miguardia.centro)
+            if siguiente.owner == person or anterior.owner == person:
+                return False
+        return True
+
+    def set_shifts(self, tipo, misguardias, year):
+        day1 = date(year,1,1).toordinal()
+        day2 = date(year,12,31).toordinal()
         for g in misguardias:
-            respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, self.centro)
-            g.owner = respuesta[0][4]
+            respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, g.centro)
+            cual = 0
+            while cual < len(respuesta):
+                p = respuesta[cual][4]
+                if self.check_shift_between_free_days(g, p, day1, day2):
+                    g.owner = p
+                    break
+                else:
+                    cual+=1
             g.save()
 
-    def program_shifts_all_year(self, year):
-        micalendario = self.get_calendario(year)
+    def program_shifts_all_year(self, year, centro_id):
+        micalendario = self.get_calendario(year, centro_id)
         for cuantas, tipo, guardias in micalendario:
-            self.set_shifts(tipo, guardias)
+            self.set_shifts(tipo, guardias, year)
 
+    def cuantas_guardias_mes(self, year, centro_id):
+        usuarios = User.objects.filter(centro_id=centro_id)
+        respdict = {}
+        for usuario in usuarios:
+            userdict = {}
+            for mes in range(1,13):
+                inicio = date(year, mes, 1)
+                locale.setlocale(locale.LC_ALL, "es_ES")
+                nombremes = inicio.strftime("%b")
+                locale.setlocale(locale.LC_ALL, locale.getdefaultlocale()[0])
+                inicio = inicio.toordinal()
+                fin = date(year, mes, calendar.monthrange(year, mes)[1]).toordinal()
+                respuesta = []
+                total = 0
+                for tipo, descripcion in self.model.TIPOS_GUARDIA:
+                    cuantas = self.filter(
+                            fecha__gte=inicio,
+                            fecha__lte=fin,
+                            owner=usuario,
+                            tipo=tipo
+                        ).count()
+                    respuesta.append(cuantas)
+                    total += cuantas
+                respuesta.append(total)
+                userdict[nombremes] = respuesta
+            respdict[usuario.username] = userdict
+        return respdict
