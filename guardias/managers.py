@@ -280,7 +280,7 @@ class guardiasManager(models.Manager):
         respuesta = self.get_dias_tipo_year(year, mtipo, centro_id=centro_id)
         micalendario.append([len(respuesta), mtipo, respuesta])
 
-        return sorted(micalendario, key=itemgetter(0))
+        return sorted(micalendario, key=itemgetter(0), reverse=True)
 
     def get_num_festivos(self, comienzo, final, centro_id):
         """
@@ -361,25 +361,28 @@ class guardiasManager(models.Manager):
                 return False
         return True
 
-    def set_shifts(self, tipo, misguardias, year):
-        day1 = date(year,1,1).toordinal()
-        day2 = date(year,12,31).toordinal()
-        for g in misguardias:
-            respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, g.centro)
-            cual = 0
-            while cual < len(respuesta):
-                p = respuesta[cual][4]
-                if self.check_shift_between_free_days(g, p, day1, day2):
-                    g.owner = p
-                    break
-                else:
-                    cual+=1
-            g.save()
-
     def program_shifts_all_year(self, year, centro_id):
         micalendario = self.get_calendario(year, centro_id)
+        day1 = date(year,1,1).toordinal()
+        day2 = date(year,12,31).toordinal()
+        nusers = User.objects.filter(centro_id=centro_id).count()
+        nlistas = len(self.model.TIPOS_GUARDIA)
+        nlugares = int(nusers/nlistas)
+        indx = 1
         for cuantas, tipo, guardias in micalendario:
-            self.set_shifts(tipo, guardias, year)
+            nshift = nlugares*indx
+            for g in guardias:
+                respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, g.centro, nshift)
+                cual = 0
+                while cual < len(respuesta):
+                    p = respuesta[cual][4]
+                    if self.check_shift_between_free_days(g, p, day1, day2):
+                        g.owner = p
+                        break
+                    else:
+                        cual+=1
+                g.save()
+            indx+=1
 
     def cuantas_guardias_mes(self, year, centro_id):
         usuarios = User.objects.filter(centro_id=centro_id)

@@ -1,8 +1,6 @@
-from datetime import datetime, date
 from django.core.management.base import BaseCommand, CommandError
 from guardias.models import Guardia
-from nike.users.models import User
-from guardias.exceptions import NoExisteCalendario, ConsistenciaCalendario, ExisteCalendario
+import csv
 
 class Command(BaseCommand):
     help = """
@@ -18,5 +16,21 @@ class Command(BaseCommand):
         year = options['year'][0]
         centro_id = options['centro_id'][0]
         respuesta = Guardia.objects.cuantas_guardias_mes(year, centro_id)
-        print(respuesta)
 
+        meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+        lista = []
+        lista.append([" ",]+meses)
+
+        for usuario in respuesta.keys():
+            fila=[]
+            fila.append(usuario)
+            pitos=respuesta[usuario]
+            for mes in meses:
+                cuala = pitos[mes][5]
+                fila.append(cuala)
+            lista.append(fila)
+
+        with open('guardias.csv', 'w') as f:
+            a = csv.writer(f)
+            a.writerows(lista)

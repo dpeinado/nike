@@ -81,6 +81,8 @@ class Guardia(models.Model):
     owner = models.ForeignKey(User, null=True, related_name="owner")
     doneby = models.ForeignKey(User, null=True, related_name="doneby")
     ausencias = models.ManyToManyField(User, related_name='vacaciones')
+    fijada = models.BooleanField(default=False)
+    pivote = models.BooleanField(default=False)
 
     objects = guardiasManager()
 

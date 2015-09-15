@@ -42,16 +42,19 @@ class User(AbstractUser):
             tipo=tipo
         ).count()
 
-    def num_guardias_total_asignadas(self, hoy, tipo):
+    def num_guardias_total_hasta_fin_mes_asignadas(self, hoy):
         from guardias.models import Guardia
-        añocorriente = date.fromordinal(hoy).year
-        inicio = date(añocorriente, 1, 1).toordinal()
+        import calendar
+        añoc = date.fromordinal(hoy).year
+        mesc = date.fromordinal(hoy).month
+        inicio = date(añoc, 1, 1).toordinal()
+        fin = date(añoc, mesc, calendar.monthrange(añoc, mesc)[1]).toordinal()
         return Guardia.objects.filter(
             owner = self
         ).filter(
             fecha__gte=inicio
         ).filter(
-            fecha__lte=hoy
+            fecha__lte=fin
         ).count()
 
     def num_last_year_total_shifts(self, hoy):
