@@ -98,6 +98,22 @@ class Guardia(models.Model):
         return "{0}: {1} -- {2}".format(date.fromordinal(self.fecha), self.tipo, self.owner)
 
 
+@python_2_unicode_compatible
+class ListaGuardias(models.Model):
+    """
+    Esta clase representa una lista ordenada de personas de un centro y para un tipo de guardia determinada.
+    La primera persona es a la que le toca la próxima guardia de este tipo para este centro.
+    Solo tiene sentido hacer esto para un centro y un tipo de guardia determinado.
+    """
+
+    centro = models.ForeignKey(Centro)
+    tipo = models.IntegerField(choices=Guardia.TIPOS_GUARDIA, default=Guardia.LAB_LAB)
+    user = models.ForeignKey(User)
+    orden = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = (('centro', 'tipo', 'orden'),)
+
 
 
 @python_2_unicode_compatible
