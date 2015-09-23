@@ -11,7 +11,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('fichero', nargs='+')
 
-    def handle(self, *args, **options):
+    def handle(self, *acrgs, **options):
         filename = options['fichero'][0]
 
         with open(filename, 'r') as f:

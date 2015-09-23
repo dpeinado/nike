@@ -35,13 +35,10 @@ class Command(BaseCommand):
                     username=username,
                     centro=cent1
                 )
-                cuantos = 0
-                intervalo = 2
                 for tipo, descripcion in Guardia.TIPOS_GUARDIA:
-                    cuantos+=tipo*intervalo
                     ListaGuardias.objects.create(
                         centro_id=centro_id,
                         tipo = tipo,
                         user = myuser,
-                        orden = orden+cuantos
+                        orden = orden
                     )

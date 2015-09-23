@@ -4,7 +4,7 @@ import csv
 
 class Command(BaseCommand):
     help = """
-            Quinto de los comandos para inicializar que se tiene que correr
+            Sexto. Comprobación de cómo se han puesto las guardias
            """
 
 
