@@ -3,6 +3,7 @@
 from django.db import models
 from datetime import datetime, date, timedelta
 import locale
+import collections
 
 import calendar
 from django.core.exceptions import ObjectDoesNotExist
@@ -362,6 +363,7 @@ class guardiasManager(models.Manager):
         return True
 
     def program_shifts_all_year(self, year, centro_id):
+        from .models import ListaGuardias
         micalendario = self.get_calendario(year, centro_id)
         day1 = date(year,1,1).toordinal()
         day2 = date(year,12,31).toordinal()
@@ -372,10 +374,17 @@ class guardiasManager(models.Manager):
         for cuantas, tipo, guardias in micalendario:
             nshift = nlugares*indx
             for g in guardias:
-                respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, g.centro, nshift)
+                listaActiva = collections.deque(
+                    list(ListaGuardias.objects.filter(
+                        tipo=tipo,
+                        centro=g.centro).order_by('orden'))
+                )
+                # respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, g.centro, nshift)
+                listaActiva.rotate(nshift)
                 cual = 0
-                while cual < len(respuesta):
-                    p = respuesta[cual][4]
+                while cual < len(listaActiva):
+                    # p = respuesta[cual][4]
+                    p = listaActiva[cual].user
                     if self.check_shift_between_free_days(g, p, day1, day2):
                         g.owner = p
                         break
@@ -411,3 +420,7 @@ class guardiasManager(models.Manager):
                 userdict[nombremes] = respuesta
             respdict[usuario.username] = userdict
         return respdict
+
+
+class listaGuardiasManager(models.Manager):
+    pass
