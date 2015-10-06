@@ -20,15 +20,21 @@ class Command(BaseCommand):
         meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
         lista = []
-        lista.append([" ",]+meses)
+        fila = ['  ']
+        fila.extend(meses)
+        fila.append('Tot')
+        lista.append(fila)
 
         for usuario in respuesta.keys():
             fila=[]
             fila.append(usuario)
             pitos=respuesta[usuario]
+            total = 0
             for mes in meses:
                 cuala = pitos[mes][5]
                 fila.append(cuala)
+                total+=cuala
+            fila.append(total)
             lista.append(fila)
 
         with open('guardias.csv', 'w') as f:

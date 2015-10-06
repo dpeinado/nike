@@ -16,6 +16,7 @@ from guardias.exceptions import NoExisteCalendario
 from guardias.exceptions import ConsistenciaCalendario
 from guardias.exceptions import ExisteCalendario
 from guardias.exceptions import IllegalArgumentError
+from guardias.exceptions import ProgramAllYearDone
 
 class guardiasManager(models.Manager):
 
@@ -225,6 +226,12 @@ class guardiasManager(models.Manager):
         # 7
         self.set_LAB_LAB_FES(year, centro_id)
 
+    def get_dias_tipo_intervalo(self, inicio, fin, ptipo, centro_id):
+        dias = self.filter(
+            fecha__gte=inicio.toordinal(), fecha__lte=fin.toordinal(),
+            tipo=ptipo, centro=centro_id).order_by('fecha')
+        return dias
+
     def get_dias_tipo_year(self, year, ptipo, centro_id):
         """
         Proporciona el número los días de un cierto tipo
@@ -242,6 +249,16 @@ class guardiasManager(models.Manager):
             fecha__gte=inicio, fecha__lte=fin,
             tipo=ptipo, centro=centro_id).order_by('fecha')
         return dias
+
+    def get_calendario_intervalo(self, inicio, fin, centro_id):
+        micalendario = []
+        mitipo = self.model.LAB_LAB
+        for mitipo, desc in self.model.TIPOS_GUARDIA:
+            respuesta = self.get_dias_tipo_intervalo(inicio, fin, mitipo, centro_id=centro_id)
+            micalendario.append([len(respuesta), mitipo, respuesta])
+
+        return sorted(micalendario, key=itemgetter(0), reverse=True)
+
 
     def get_calendario(self, year, centro_id):
         """
@@ -360,38 +377,61 @@ class guardiasManager(models.Manager):
             anterior  = self.get(fecha=miguardia.fecha-1, centro=miguardia.centro)
             if siguiente.owner == person or anterior.owner == person:
                 return False
+        if person in miguardia.ausencias:
+            return False
         return True
+
+    def clear_ausencias_intervalo(self, inicio, fin, centro_id):
+        micalendario = self.get_calendario_intervalo(inicio, fin, centro_id)
+        respuesta = {}
+        for cuantas, tipo, guardias in micalendario:
+            libres = []
+            for g in guardias:
+                if g.owner in g.ausencias:
+                    g.owner = None
+                    g.save()
+                    libres.append(g)
+            respuesta[tipo] = libres
+        return respuesta
+
+    def program_shifts_interval(self, inicio, fin, centro_id):
+        from .models import ListaGuardias
+        #micalendario = self.get_calendario_intervalo(inicio, fin, centro_id)
+        libres = self.clear_ausencias_intervalo(inicio, fin, centro_id)
+        for tipo in libres.keys():
+            for g in libres[tipo]:
+                lista = ListaGuardias.objects.get_lista(centro_id, tipo)
+                for elem in lista.order_by('orden'):
+                    p = User.objects.get(username=elem.user)
+                    if self.check_shift_between_free_days(g, p, inicio.toordinal(), fin.toordinal()):
+                        g.owner = p
+                        ListaGuardias.objects.elem_to_bottom(centro_id, tipo, elem.orden)
+                        break
+                    else:
+                        pass
+                g.save()
 
     def program_shifts_all_year(self, year, centro_id):
         from .models import ListaGuardias
         micalendario = self.get_calendario(year, centro_id)
         day1 = date(year,1,1).toordinal()
         day2 = date(year,12,31).toordinal()
-        nusers = User.objects.filter(centro_id=centro_id).count()
-        nlistas = len(self.model.TIPOS_GUARDIA)
-        nlugares = int(nusers/nlistas)
-        indx = 1
         for cuantas, tipo, guardias in micalendario:
-            nshift = nlugares*indx
             for g in guardias:
-                listaActiva = collections.deque(
-                    list(ListaGuardias.objects.filter(
-                        tipo=tipo,
-                        centro=g.centro).order_by('orden'))
-                )
-                # respuesta = User.guardias.get_next_user_tipo(tipo, g.fecha, g.centro, nshift)
-                listaActiva.rotate(nshift)
+                if g.owner:
+                    raise ProgramAllYearDone("Ya se ha programado el año entero")
+                lista = ListaGuardias.objects.get_lista(centro_id, tipo)
                 cual = 0
-                while cual < len(listaActiva):
-                    # p = respuesta[cual][4]
-                    p = listaActiva[cual].user
+                for elem in lista.order_by('orden'):
+                    p = User.objects.get(username=elem.user)
                     if self.check_shift_between_free_days(g, p, day1, day2):
                         g.owner = p
+                        ListaGuardias.objects.elem_to_bottom(centro_id, tipo, elem.orden)
                         break
                     else:
-                        cual+=1
+                        pass
                 g.save()
-            indx+=1
+
 
     def cuantas_guardias_mes(self, year, centro_id):
         usuarios = User.objects.filter(centro_id=centro_id)
@@ -423,4 +463,23 @@ class guardiasManager(models.Manager):
 
 
 class listaGuardiasManager(models.Manager):
-    pass
+    def get_lista(self, centro, tipo):
+        return self.get_queryset().filter(centro=centro,tipo=tipo)
+
+    def elem_to_bottom(self, centro, tipo, elemorden):
+        lista = self.get_queryset().filter(
+            centro=centro,
+            tipo=tipo).order_by('orden')
+        tobottom = lista.get(orden=elemorden)
+        tobottom.orden=999
+        tobottom.save()
+        for elem in lista.order_by('orden'):
+            if elem.orden>elemorden:
+                elem.orden-=1
+                elem.save()
+        tobottom.orden = len(lista)
+        tobottom.save()
+
+    def shift_n(self, centro, tipo, n):
+        for i in range(0,n):
+            self.elem_to_bottom(centro,tipo,1)

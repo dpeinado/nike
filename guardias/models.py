@@ -3,7 +3,7 @@ from datetime import date
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
-from guardias.managers import guardiasManager
+from guardias.managers import guardiasManager, listaGuardiasManager
 from nike.users.models import User
 
 # Create your models here.
@@ -111,10 +111,16 @@ class ListaGuardias(models.Model):
     user = models.ForeignKey(User)
     orden = models.IntegerField(default=0)
 
+    objects = listaGuardiasManager()
+
     class Meta:
         unique_together = (('centro', 'tipo', 'orden'),)
 
-
+    def __str__(self):
+        return "{0}-{1} {2}: {3}".format(self.centro,
+                                         self.tipo,
+                                         self.user.username,
+                                         self.orden)
 
 @python_2_unicode_compatible
 class VacacionesAnuales(models.Model):

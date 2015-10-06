@@ -10,3 +10,6 @@ class ExisteCalendario(Exception):
 
 class IllegalArgumentError(ValueError):
     pass
+
+class ProgramAllYearDone(Exception):
+    pass

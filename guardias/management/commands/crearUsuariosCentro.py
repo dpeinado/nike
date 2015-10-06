@@ -11,9 +11,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('fichero', nargs='+')
+        parser.add_argument('centro', nargs='+', type=int)
 
     def handle(self, *args, **options):
         filename = options['fichero'][0]
+        centro = options['centro'][0]
 
         with open(filename, 'r') as f:
             reader = csv.reader(f)
@@ -21,12 +23,12 @@ class Command(BaseCommand):
                 nombre = row[0]
                 apellidos = row[1]
                 username = row[2]
-                centro_id= row[3]
-                orden = row[4]
+                orden = row[3]
+
                 try:
-                    cent1 = Centro.objects.get(id=centro_id)
+                    cent1 = Centro.objects.get(id=centro)
                 except ObjectDoesNotExist:
-                    print("Error: no existe el centro con id: {}".format(centro_id))
+                    print("Error: no existe el centro con id: {}".format(centro))
                     return
 
                 myuser = User.objects.create(
@@ -37,8 +39,14 @@ class Command(BaseCommand):
                 )
                 for tipo, descripcion in Guardia.TIPOS_GUARDIA:
                     ListaGuardias.objects.create(
-                        centro_id=centro_id,
+                        centro_id=centro,
                         tipo = tipo,
                         user = myuser,
                         orden = orden
                     )
+        cuantosUsers = ListaGuardias.objects.filter(centro=centro,tipo=0).count()
+        esc = int(cuantosUsers/len(Guardia.TIPOS_GUARDIA))
+        index = 0
+        for tipo, descripcion in Guardia.TIPOS_GUARDIA:
+            ListaGuardias.objects.shift_n(centro,tipo,esc*index)
+            index+=1
