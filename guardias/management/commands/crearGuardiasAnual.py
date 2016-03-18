@@ -17,7 +17,7 @@ class Command(BaseCommand):
         year = options['year'][0]
         centro_id = options['centro_id'][0]
 
-        # Guardia.objects.program_shifts_all_year(year, centro_id)
+        Guardia.objects.program_shifts_all_year(year, centro_id)
         inicio = date(2015,2,1)
         fin = date(2015,2,28)
         # Guardia.objects.

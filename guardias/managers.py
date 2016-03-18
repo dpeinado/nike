@@ -377,7 +377,7 @@ class guardiasManager(models.Manager):
             anterior  = self.get(fecha=miguardia.fecha-1, centro=miguardia.centro)
             if siguiente.owner == person or anterior.owner == person:
                 return False
-        if person in miguardia.ausencias:
+        if person in miguardia.ausencias.all():
             return False
         return True
 
@@ -420,17 +420,17 @@ class guardiasManager(models.Manager):
             for g in guardias:
                 if g.owner:
                     raise ProgramAllYearDone("Ya se ha programado el año entero")
-                lista = ListaGuardias.objects.get_lista(centro_id, tipo)
-                cual = 0
-                for elem in lista.order_by('orden'):
-                    p = User.objects.get(username=elem.user)
-                    if self.check_shift_between_free_days(g, p, day1, day2):
-                        g.owner = p
-                        ListaGuardias.objects.elem_to_bottom(centro_id, tipo, elem.orden)
-                        break
-                    else:
-                        pass
-                g.save()
+                # lista = ListaGuardias.objects.get_lista(centro_id, tipo)
+                # cual = 0
+                # for elem in lista.order_by('orden'):
+                #     p = User.objects.get(username=elem.user)
+                #     if self.check_shift_between_free_days(g, p, day1, day2):
+                #         g.owner = p
+                #         ListaGuardias.objects.elem_to_bottom(centro_id, tipo, elem.orden)
+                #         break
+                #     else:
+                #         pass
+                # g.save()
 
 
     def cuantas_guardias_mes(self, year, centro_id):
