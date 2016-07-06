@@ -431,6 +431,16 @@ class guardiasManager(models.Manager):
                 #     else:
                 #         pass
                 # g.save()
+                lista = User.guardias.get_next_user_tipo(tipo, g.fecha, g.centro, 5)
+                cual = 0
+                while cual < len(lista):
+                    p = lista[cual][4]
+                    if self.check_shift_between_free_days(g, p, day1, day2):
+                        g.owner = p
+                        break
+                    else:
+                        cual+=1
+                g.save()
 
 
     def cuantas_guardias_mes(self, year, centro_id):

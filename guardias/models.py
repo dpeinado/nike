@@ -122,6 +122,7 @@ class ListaGuardias(models.Model):
                                          self.user.username,
                                          self.orden)
 
+
 @python_2_unicode_compatible
 class VacacionesAnuales(models.Model):
     """
